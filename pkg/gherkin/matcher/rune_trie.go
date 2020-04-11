@@ -1,5 +1,7 @@
 package matcher
 
+import "strings"
+
 type RuneTrieMatcher struct {
 	value    interface{}
 	children map[rune]*RuneTrieMatcher
@@ -10,6 +12,7 @@ func NewRuneTrieMatcher() Matcher {
 }
 
 func (m *RuneTrieMatcher) Get(key string) interface{} {
+	key = strings.ToLower(key)
 	node := m
 	for _, r := range key {
 		node = node.children[r]
@@ -20,7 +23,28 @@ func (m *RuneTrieMatcher) Get(key string) interface{} {
 	return node.value
 }
 
+func (m *RuneTrieMatcher) FindFirstAtStartOfText(text string) (interface{}, int) {
+	node := m
+	text = strings.ToLower(text)
+	var foundValue interface{}
+	foundEndOffset := 0
+	for i, r := range text {
+		node = node.children[r]
+		if nil == node {
+			return foundValue, foundEndOffset
+		}
+
+		if nil != node.value {
+			foundValue = node.value
+			foundEndOffset = i
+		}
+	}
+
+	return foundValue, foundEndOffset
+}
+
 func (m *RuneTrieMatcher) Put(key string, value interface{}) {
+	key = strings.ToLower(key)
 	node := m
 	for _, r := range key {
 		child, _ := node.children[r]

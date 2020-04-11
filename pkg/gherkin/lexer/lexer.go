@@ -5,17 +5,21 @@ import (
 	"github.com/rentool/rentool/pkg/gherkin/matcher"
 	"github.com/rentool/rentool/pkg/gherkin/token"
 	"io"
+	"strings"
 )
 
 // Lexer structure.
 type Lexer struct {
 	keywordsMatcher matcher.ReadOnlyMatcher
 	reader          *bufio.Reader
-	position        int
-	readPosition    int
-	rune            rune
-	line            int
-	linePos         int
+	lineProcessed   bool
+	currentRune     rune
+	line            string
+	trimmedLine     string
+	lineNo          int
+	isEOF           bool
+	error           error
+	currentToken    token.Token
 }
 
 // New creates new Lexer structure.
@@ -23,6 +27,8 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 	lexer := &Lexer{
 		keywordsMatcher: keywordsMatcher,
 		reader:          bufio.NewReader(reader),
+		lineProcessed:   false,
+		lineNo:          -1,
 	}
 
 	return lexer
@@ -30,65 +36,55 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 
 // NextToken reads next sequence of runes and returns matching token.
 func (l *Lexer) NextToken() token.Token {
+	result := l.scanEOF() ||
+		l.scanKeyword()
 
-	return token.Token{
-		Type:    token.ILLEGAL,
-		Literal: "",
+	if !result {
+		if nil != l.error {
+			panic(l.error)
+		}
+
+		panic("Unexpected error occurred")
 	}
-	//
-	//var tok token.Token
-	//
-	//switch l.rune {
-	//case rune(0):
-	//	tok.Type = token.EOF
-	//default:
-	//	if unicode.IsLetter(l.rune) {
-	//		literal := l.readLiteral()
-	//		foundToken := token.LookupKeyword(literal)
-	//		_ = foundToken
-	//
-	//		return tok
-	//	} else {
-	//		tok = newToken(token.ILLEGAL, l.rune)
-	//	}
-	//}
-	//
-	//l.readRune()
-	//return tok
+
+	return l.currentToken
 }
 
-//
-//// readLiteral continuously reads runes until it reaches non-letter rune.
-//func (l *Lexer) readLiteral() string {
-//	var sb strings.Builder
-//	for unicode.IsLetter(l.rune) {
-//		sb.WriteRune(l.rune)
-//		l.readRune()
-//	}
-//	return sb.String()
-//}
-//
-//// readRune reads next character as a rune and sets it to the current state. Also updates current line and cursor
-//// positions.
-//func (l *Lexer) readRune() {
-//	if rn, _, err := l.reader.ReadRune(); err != nil {
-//		if err == io.EOF {
-//			l.rune = rune(0)
-//		} else {
-//			fmt.Printf("ReadRune() error: %v", err)
-//			os.Exit(1)
-//		}
-//	} else {
-//		l.rune = rn
-//		if l.rune == '\n' {
-//			l.line++
-//			l.linePos = 0
-//		}
-//		l.linePos++
-//	}
-//}
-//
-//// newToken creates new token.
-//func newToken(tokenType token.Type, rn rune) token.Token {
-//	return token.Token{Type: tokenType, Literal: string(rn)}
-//}
+func (l *Lexer) scanEOF() bool {
+	if l.isEOF {
+		l.currentToken = token.Token{
+			Type:    token.Eof,
+			Literal: "",
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func (l *Lexer) scanKeyword() bool {
+
+	return false
+}
+
+func (l *Lexer) scanComment() bool {
+	return false
+}
+
+// readLine reads next line and saves line data to lexer's state.
+func (l *Lexer) readLine() error {
+	l.lineNo++
+	l.lineProcessed = false
+
+	line, err := l.reader.ReadString('\n')
+	if err != nil {
+		l.line = ""
+		l.trimmedLine = ""
+		return err
+	}
+	l.line = line
+	l.trimmedLine = strings.Trim(line, " ")
+
+	return nil
+}

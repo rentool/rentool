@@ -1,48 +1,42 @@
 package lexer
 
 import (
-	"bufio"
-	"fmt"
+	"github.com/rentool/rentool/pkg/gherkin/matcher"
+	"github.com/rentool/rentool/pkg/gherkin/token"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )
 
-func TestFeature(t *testing.T) {
-	input := `Feature Test Feature
-	
-	Привет как дела
+var englishKeywords = map[string]token.Type{
+	"Feature":    token.Feature,
+	"Background": token.Background,
+	"Scenario":   token.Scenario,
+	"Given":      token.Given,
+	"When":       token.When,
+	"Then":       token.Then,
+	"And":        token.And,
+	"But":        token.Background,
+	"Examples":   token.Examples,
+}
 
-	`
+func Test_givenEmptyLine_whenNextToken_thenReturnEOF(t *testing.T) {
+	// Given
+	lexer := createLexer("")
 
-	var aga = bufio.NewReader(strings.NewReader(input))
-	for {
-		line, err := aga.ReadString('\n')
+	// When
+	result := lexer.NextToken()
 
-		fmt.Printf(" > Read %d characters: %v\n", len(line), line)
-		if err != nil {
-			break
-		}
+	// Then
+	assert.Equal(t, token.Eof, result.Type)
+}
+
+// createLexer creates Lexer service with given feature content and default keywords matcher.
+func createLexer(input string) *Lexer {
+	var keywordsMatcher = matcher.NewRuneTrieMatcher()
+	for name, value := range englishKeywords {
+		keywordsMatcher.Put(name, value)
 	}
 
-	lexer := New(strings.NewReader(input))
-
-	var token = lexer.NextToken()
-
-	t.Fatalf("Got: %v", token)
-
-	//tests := []struct{
-	//	expectedType token.TokenType
-	//	expectedLiteral string
-	//}{
-	//	{token.FEATURE, "Feature"},
-	//	{token.EOF, ""},
-	//}
-	//
-	//for i, test := range tests {
-	//	tok := lexer.NextToken()
-	//
-	//	if tok.Type != test.expectedType {
-	//		t.Fatalf("tests[%d] - wrong token type. expected=%v, got=%v", i, test.expectedType, tok.Type)
-	//	}
-	//}
+	return New(strings.NewReader(input), keywordsMatcher)
 }

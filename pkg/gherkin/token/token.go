@@ -19,32 +19,35 @@ func (t Token) String() string {
 }
 
 const (
-	ILLEGAL Type = iota
-	EOF
-	FEATURE
-	BACKGROUND
-	SCENARIO
-	GIVEN
-	WHEN
-	THEN
-	AND
-	BUT
-	EXAMPLES
-	COMMENT
-	TEXT
+	Illegal Type = iota
+	Eof
+	Feature
+	Background
+	Scenario
+	Outline
+	Given
+	When
+	Then
+	And
+	But
+	Examples
+	Comment
+	Text
+	KeywordValue
 )
 
-// keywords are words or sentences from which every logical step should start from.
+// keywords are words or sentences from which every statement should start from.
 var keywords = map[string]Type{
-	"feature":    FEATURE,
-	"background": BACKGROUND,
-	"scenario":   SCENARIO,
-	"given":      GIVEN,
-	"when":       WHEN,
-	"then":       THEN,
-	"and":        AND,
-	"but":        BUT,
-	"examples":   EXAMPLES,
+	"feature":          Feature,
+	"background":       Background,
+	"scenario":         Scenario,
+	"scenario outline": Outline,
+	"given":            Given,
+	"when":             When,
+	"then":             Then,
+	"and":              And,
+	"but":              But,
+	"examples":         Examples,
 }
 
 // LookupKeyword returns corresponding to the literal token.
@@ -52,5 +55,5 @@ func LookupKeyword(literal string) Type {
 	if tok, ok := keywords[strings.ToLower(literal)]; ok {
 		return tok
 	}
-	return ILLEGAL
+	return Illegal
 }
