@@ -23,6 +23,26 @@ func (m *RuneTrieMatcher) Get(key string) interface{} {
 	return node.value
 }
 
+func (m *RuneTrieMatcher) GetByText(text string) (interface{}, string) {
+	node := m
+	text = strings.ToLower(text)
+	var foundValue interface{}
+	foundEndOffset := 0
+	for i, r := range text {
+		node = node.children[r]
+		if nil == node {
+			return foundValue, text[foundEndOffset:]
+		}
+
+		if nil != node.value {
+			foundValue = node.value
+			foundEndOffset = i + 1
+		}
+	}
+
+	return foundValue, text[foundEndOffset:]
+}
+
 func (m *RuneTrieMatcher) FindFirstAtStartOfText(text string) (interface{}, int) {
 	node := m
 	text = strings.ToLower(text)
@@ -36,7 +56,7 @@ func (m *RuneTrieMatcher) FindFirstAtStartOfText(text string) (interface{}, int)
 
 		if nil != node.value {
 			foundValue = node.value
-			foundEndOffset = i
+			foundEndOffset = i + 1
 		}
 	}
 
@@ -44,7 +64,7 @@ func (m *RuneTrieMatcher) FindFirstAtStartOfText(text string) (interface{}, int)
 }
 
 func (m *RuneTrieMatcher) Put(key string, value interface{}) {
-	key = strings.ToLower(key)
+	key = strings.ToLower(strings.Trim(key, " "))
 	node := m
 	for _, r := range key {
 		child, _ := node.children[r]

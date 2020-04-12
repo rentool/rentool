@@ -22,12 +22,12 @@ func _() {
 	_ = x[Examples-11]
 	_ = x[Comment-12]
 	_ = x[Text-13]
-	_ = x[KeywordValue-14]
+	_ = x[Eos-14]
 }
 
-const _Type_name = "IllegalEofFeatureBackgroundScenarioOutlineGivenWhenThenAndButExamplesCommentTextKeywordValue"
+const _Type_name = "IllegalEofFeatureBackgroundScenarioOutlineGivenWhenThenAndButExamplesCommentTextEos"
 
-var _Type_index = [...]uint8{0, 7, 10, 17, 27, 35, 42, 47, 51, 55, 58, 61, 69, 76, 80, 92}
+var _Type_index = [...]uint8{0, 7, 10, 17, 27, 35, 42, 47, 51, 55, 58, 61, 69, 76, 80, 83}
 
 func (i Type) String() string {
 	if i >= Type(len(_Type_index)-1) {

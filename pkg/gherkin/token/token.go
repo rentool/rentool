@@ -33,7 +33,7 @@ const (
 	Examples
 	Comment
 	Text
-	KeywordValue
+	Eos
 )
 
 // keywords are words or sentences from which every statement should start from.

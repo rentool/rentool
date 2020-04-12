@@ -12,14 +12,13 @@ import (
 type Lexer struct {
 	keywordsMatcher matcher.ReadOnlyMatcher
 	reader          *bufio.Reader
-	lineProcessed   bool
 	currentRune     rune
 	line            string
 	trimmedLine     string
 	lineNo          int
 	isEOF           bool
 	error           error
-	currentToken    token.Token
+	tokens          []token.Token
 }
 
 // New creates new Lexer structure.
@@ -27,7 +26,6 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 	lexer := &Lexer{
 		keywordsMatcher: keywordsMatcher,
 		reader:          bufio.NewReader(reader),
-		lineProcessed:   false,
 		lineNo:          -1,
 	}
 
@@ -36,6 +34,10 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 
 // NextToken reads next sequence of runes and returns matching token.
 func (l *Lexer) NextToken() token.Token {
+	if len(l.tokens) > 0 {
+		return l.dequeueToken()
+	}
+
 	result := l.scanEOF() ||
 		l.scanKeyword()
 
@@ -47,15 +49,26 @@ func (l *Lexer) NextToken() token.Token {
 		panic("Unexpected error occurred")
 	}
 
-	return l.currentToken
+	return l.dequeueToken()
+}
+
+func (l *Lexer) dequeueToken() token.Token {
+	t := l.tokens[0]
+	l.tokens = l.tokens[1:]
+
+	return t
+}
+
+func (l *Lexer) queueToken(tok token.Token) {
+	l.tokens = append(l.tokens, tok)
 }
 
 func (l *Lexer) scanEOF() bool {
 	if l.isEOF {
-		l.currentToken = token.Token{
+		l.tokens = append(l.tokens, token.Token{
 			Type:    token.Eof,
 			Literal: "",
-		}
+		})
 
 		return true
 	}
@@ -64,8 +77,32 @@ func (l *Lexer) scanEOF() bool {
 }
 
 func (l *Lexer) scanKeyword() bool {
+	tokValue, rest := l.keywordsMatcher.GetByText(l.trimmedLine)
+	if nil == tokValue {
+		return false
+	}
 
-	return false
+	tok, ok := tokValue.(token.Token)
+	if !ok {
+		panic("Keywords matcher returned invalid value. It must be instance of token.Token")
+	}
+	l.queueToken(tok)
+
+	l.queueToken(token.Token{
+		Type:    token.Text,
+		Literal: rest,
+	})
+
+	return true
+}
+
+func (l *Lexer) consumeLine() {
+	l.queueToken(token.Token{
+		Type:    token.Eos,
+		Literal: "",
+	})
+
+	l.readLine()
 }
 
 func (l *Lexer) scanComment() bool {
@@ -73,18 +110,18 @@ func (l *Lexer) scanComment() bool {
 }
 
 // readLine reads next line and saves line data to lexer's state.
-func (l *Lexer) readLine() error {
+func (l *Lexer) readLine() {
 	l.lineNo++
-	l.lineProcessed = false
 
 	line, err := l.reader.ReadString('\n')
 	if err != nil {
 		l.line = ""
 		l.trimmedLine = ""
-		return err
+		l.error = err
+
+		return
 	}
+
 	l.line = line
 	l.trimmedLine = strings.Trim(line, " ")
-
-	return nil
 }
