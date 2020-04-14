@@ -2,6 +2,8 @@ package lexer
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"github.com/rentool/rentool/pkg/gherkin/matcher"
 	"github.com/rentool/rentool/pkg/gherkin/token"
 	"io"
@@ -39,28 +41,19 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	result := l.scanEOF() ||
-		l.scanKeyword()
+		l.scanKeyword() ||
+		l.scanComment() ||
+		l.scanText()
 
 	if !result {
 		if nil != l.error {
 			panic(l.error)
 		}
 
-		panic("Unexpected error occurred")
+		panic(fmt.Errorf("unexpected error occurred for line: %v", l.line))
 	}
 
 	return l.dequeueToken()
-}
-
-func (l *Lexer) dequeueToken() token.Token {
-	t := l.tokens[0]
-	l.tokens = l.tokens[1:]
-
-	return t
-}
-
-func (l *Lexer) queueToken(tok token.Token) {
-	l.tokens = append(l.tokens, tok)
 }
 
 func (l *Lexer) scanEOF() bool {
@@ -77,21 +70,38 @@ func (l *Lexer) scanEOF() bool {
 }
 
 func (l *Lexer) scanKeyword() bool {
-	tokValue, rest := l.keywordsMatcher.GetByText(l.trimmedLine)
-	if nil == tokValue {
+	tokenValue, restLine := l.keywordsMatcher.GetByText(l.trimmedLine)
+	if nil == tokenValue {
 		return false
 	}
 
-	tok, ok := tokValue.(token.Token)
+	tok, ok := tokenValue.(token.Token)
 	if !ok {
-		panic("Keywords matcher returned invalid value. It must be instance of token.Token")
+		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. It must be instance of token.Token", tok))
 	}
 	l.queueToken(tok)
 
 	l.queueToken(token.Token{
 		Type:    token.Text,
-		Literal: rest,
+		Literal: restLine,
 	})
+
+	l.consumeLine()
+
+	return true
+}
+
+func (l *Lexer) scanComment() bool {
+	return false
+}
+
+func (l *Lexer) scanText() bool {
+	l.queueToken(token.Token{
+		Type:    token.Text,
+		Literal: l.line,
+	})
+
+	l.consumeLine()
 
 	return true
 }
@@ -105,8 +115,15 @@ func (l *Lexer) consumeLine() {
 	l.readLine()
 }
 
-func (l *Lexer) scanComment() bool {
-	return false
+func (l *Lexer) dequeueToken() token.Token {
+	t := l.tokens[0]
+	l.tokens = l.tokens[1:]
+
+	return t
+}
+
+func (l *Lexer) queueToken(tok token.Token) {
+	l.tokens = append(l.tokens, tok)
 }
 
 // readLine reads next line and saves line data to lexer's state.
@@ -115,9 +132,13 @@ func (l *Lexer) readLine() {
 
 	line, err := l.reader.ReadString('\n')
 	if err != nil {
-		l.line = ""
-		l.trimmedLine = ""
-		l.error = err
+		if errors.Is(err, io.EOF) {
+			l.isEOF = true
+		} else {
+			l.line = ""
+			l.trimmedLine = ""
+			l.error = err
+		}
 
 		return
 	}
