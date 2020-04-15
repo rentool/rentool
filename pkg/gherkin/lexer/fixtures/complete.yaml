@@ -1,12 +1,15 @@
-"Feature: feature name\n":
-  - type: Feature
-    literal: 'Feature'
-  - type: Text
-    literal: 'feature name'
-  - type: Eos
-    literal: ''
-"this is feature description\n":
-  - type: Text
-    literal: "this is feature description"
-  - type: Eos
-    literal: ''
+keywords:
+  "Feature:": Feature
+feature:
+  "Feature: feature name\n":
+    - type: Feature
+      literal: 'Feature'
+    - type: Text
+      literal: 'feature name'
+    - type: Eos
+      literal: ''
+  "this is feature description\n":
+    - type: Text
+      literal: "this is feature description"
+    - type: Eos
+      literal: ''

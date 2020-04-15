@@ -10,18 +10,6 @@ import (
 	"testing"
 )
 
-var englishKeywords = map[string]token.Type{
-	"Feature":    token.Feature,
-	"Background": token.Background,
-	"Scenario":   token.Scenario,
-	"Given":      token.Given,
-	"When":       token.When,
-	"Then":       token.Then,
-	"And":        token.And,
-	"But":        token.Background,
-	"Examples":   token.Examples,
-}
-
 // TestFixtures runs all fixture files from ./fixtures directory.
 func TestFixtures(t *testing.T) {
 	// Given
@@ -34,7 +22,14 @@ func TestFixtures(t *testing.T) {
 
 	var featureContent strings.Builder
 	var expectedTokens []string
-	for line, rawTokens := range config.AllSettings() {
+
+	featureRawData := config.Get("feature")
+	featureData, ok := featureRawData.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Cannot map feature data to map[string]interface{}: %+v", featureRawData)
+	}
+
+	for line, rawTokens := range featureData {
 		featureContent.WriteString(line)
 
 		tokensData, ok := rawTokens.([]interface{})
@@ -62,6 +57,23 @@ func TestFixtures(t *testing.T) {
 		}
 	}
 
+	rawKeywords := config.Get("keywords")
+	keywords, ok := rawKeywords.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Cannot map keywords to map[string]interface{}: %+v", rawKeywords)
+	}
+
+	for keyword, tokType := range keywords {
+
+	}
+
+	var keywordsMatcher = matcher.NewRuneTrieMatcher()
+	for name, value := range englishKeywords {
+		keywordsMatcher.Put(name, value)
+	}
+
+	return New(strings.NewReader(input), keywordsMatcher)
+
 	// When
 	lexer := createLexer(featureContent.String())
 	var actualTokens []string
@@ -71,39 +83,6 @@ func TestFixtures(t *testing.T) {
 
 	// Then
 	assert.Equal(t, expectedTokens, actualTokens)
-}
-
-func Test_givenEmptyLine_whenNextToken_thenReturnEOF(t *testing.T) {
-	// Given
-	lexer := createLexer("")
-
-	// When
-	var tokens []token.Token
-	for t := lexer.NextToken(); t.Type != token.Eof; t = lexer.NextToken() {
-		tokens = append(tokens, t)
-	}
-
-	// Then
-	assert.Equal(t, []token.Token{
-		{
-			Type:    token.Text,
-			Literal: "",
-		},
-		{
-			Type:    token.Eos,
-			Literal: "",
-		},
-	}, tokens)
-}
-
-// createLexer creates Lexer service with given feature content and default keywords matcher.
-func createLexer(input string) *Lexer {
-	var keywordsMatcher = matcher.NewRuneTrieMatcher()
-	for name, value := range englishKeywords {
-		keywordsMatcher.Put(name, value)
-	}
-
-	return New(strings.NewReader(input), keywordsMatcher)
 }
 
 func createToken(typ token.Type, literal string) token.Token {

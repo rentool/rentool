@@ -3,8 +3,8 @@
 package token
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 )
 
 type Type uint8
@@ -36,24 +36,43 @@ const (
 	Eos
 )
 
-// keywords are words or sentences from which every statement should start from.
-var keywords = map[string]Type{
-	"feature":          Feature,
-	"background":       Background,
-	"scenario":         Scenario,
-	"scenario outline": Outline,
-	"given":            Given,
-	"when":             When,
-	"then":             Then,
-	"and":              And,
-	"but":              But,
-	"examples":         Examples,
-}
+var TypeNotFound = errors.New("TokenNotFound")
 
-// LookupKeyword returns corresponding to the literal token.
-func LookupKeyword(literal string) Type {
-	if tok, ok := keywords[strings.ToLower(literal)]; ok {
-		return tok
+// stringToTokenType looks for token type for given string. For example, for string "Scenario" it
+// returns token.Scenario type. If token type not found it returns Illegal type and error.
+func StringToTokenType(str string) (Type, error) {
+	switch str {
+	case Illegal.String():
+		return Illegal, nil
+	case Eof.String():
+		return Eof, nil
+	case Feature.String():
+		return Feature, nil
+	case Background.String():
+		return Background, nil
+	case Scenario.String():
+		return Scenario, nil
+	case Outline.String():
+		return Outline, nil
+	case Given.String():
+		return Given, nil
+	case When.String():
+		return When, nil
+	case Then.String():
+		return Then, nil
+	case And.String():
+		return And, nil
+	case But.String():
+		return But, nil
+	case Examples.String():
+		return Examples, nil
+	case Comment.String():
+		return Comment, nil
+	case Text.String():
+		return Text, nil
+	case Eos.String():
+		return Eos, nil
 	}
-	return Illegal
+
+	return Illegal, TypeNotFound
 }
