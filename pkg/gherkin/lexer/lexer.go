@@ -31,6 +31,8 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 		lineNo:          -1,
 	}
 
+	lexer.readLine()
+
 	return lexer
 }
 
@@ -58,10 +60,7 @@ func (l *Lexer) NextToken() token.Token {
 
 func (l *Lexer) scanEOF() bool {
 	if l.isEOF {
-		l.tokens = append(l.tokens, token.Token{
-			Type:    token.Eof,
-			Literal: "",
-		})
+		l.queueToken(token.Eof, "")
 
 		return true
 	}
@@ -75,16 +74,13 @@ func (l *Lexer) scanKeyword() bool {
 		return false
 	}
 
-	tok, ok := tokenValue.(token.Token)
+	typ, ok := tokenValue.(token.Type)
 	if !ok {
-		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. It must be instance of token.Token", tok))
+		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. It must be instance of token.Type", tokenValue))
 	}
-	l.queueToken(tok)
+	l.queueToken(typ, typ.String())
 
-	l.queueToken(token.Token{
-		Type:    token.Text,
-		Literal: restLine,
-	})
+	l.queueToken(token.Text, restLine)
 
 	l.consumeLine()
 
@@ -96,10 +92,7 @@ func (l *Lexer) scanComment() bool {
 }
 
 func (l *Lexer) scanText() bool {
-	l.queueToken(token.Token{
-		Type:    token.Text,
-		Literal: l.line,
-	})
+	l.queueToken(token.Text, l.line)
 
 	l.consumeLine()
 
@@ -107,10 +100,7 @@ func (l *Lexer) scanText() bool {
 }
 
 func (l *Lexer) consumeLine() {
-	l.queueToken(token.Token{
-		Type:    token.Eos,
-		Literal: "",
-	})
+	l.queueToken(token.Eos, "")
 
 	l.readLine()
 }
@@ -122,8 +112,11 @@ func (l *Lexer) dequeueToken() token.Token {
 	return t
 }
 
-func (l *Lexer) queueToken(tok token.Token) {
-	l.tokens = append(l.tokens, tok)
+func (l *Lexer) queueToken(typ token.Type, literal string) {
+	l.tokens = append(l.tokens, token.Token{
+		Type:    typ,
+		Literal: strings.Trim(strings.Trim(literal, "\n"), " "),
+	})
 }
 
 // readLine reads next line and saves line data to lexer's state.

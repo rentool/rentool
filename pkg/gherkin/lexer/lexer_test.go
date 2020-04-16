@@ -21,12 +21,13 @@ func TestFixtures(t *testing.T) {
 	}
 
 	var featureContent strings.Builder
-	var expectedTokens []string
+	var expectedContent strings.Builder
+	var actualContent strings.Builder
 
 	featureRawData := config.Get("feature")
 	featureData, ok := featureRawData.(map[string]interface{})
 	if !ok {
-		t.Fatalf("Cannot map feature data to map[string]interface{}: %+v", featureRawData)
+		t.Fatalf("cannot map feature data to map[string]interface{}: %+v", featureRawData)
 	}
 
 	for line, rawTokens := range featureData {
@@ -53,56 +54,37 @@ func TestFixtures(t *testing.T) {
 				t.Fatal("cannot convert token literal to string")
 			}
 
-			expectedTokens = append(expectedTokens, fmt.Sprintf("%v: %v", typ, literal))
+			expectedContent.WriteString(fmt.Sprintf("%v: %v\n", typ, literal))
 		}
 	}
 
 	rawKeywords := config.Get("keywords")
 	keywords, ok := rawKeywords.(map[string]interface{})
 	if !ok {
-		t.Fatalf("Cannot map keywords to map[string]interface{}: %+v", rawKeywords)
-	}
-
-	for keyword, tokType := range keywords {
-
+		t.Fatalf("cannot map keywords to map[string]interface{}: %+v", rawKeywords)
 	}
 
 	var keywordsMatcher = matcher.NewRuneTrieMatcher()
-	for name, value := range englishKeywords {
-		keywordsMatcher.Put(name, value)
+	for keyword, typeRawStr := range keywords {
+		typeStr, ok := typeRawStr.(string)
+		if !ok {
+			t.Fatalf("cannot map token type to string: %+v", typeRawStr)
+		}
+
+		tokType, err := token.StringToTokenType(typeStr)
+		if err != nil {
+			t.Fatalf("cannot create token type from string %+v: %v", typeStr, err)
+		}
+
+		keywordsMatcher.Put(keyword, tokType)
 	}
 
-	return New(strings.NewReader(input), keywordsMatcher)
-
 	// When
-	lexer := createLexer(featureContent.String())
-	var actualTokens []string
+	lexer := New(strings.NewReader(featureContent.String()), keywordsMatcher)
 	for t := lexer.NextToken(); t.Type != token.Eof; t = lexer.NextToken() {
-		actualTokens = append(actualTokens, fmt.Sprintf("%v: %v", t.Type.String(), t.Literal))
+		actualContent.WriteString(fmt.Sprintf("%v: %v\n", t.Type.String(), t.Literal))
 	}
 
 	// Then
-	assert.Equal(t, expectedTokens, actualTokens)
-}
-
-func createToken(typ token.Type, literal string) token.Token {
-	return token.Token{
-		Type:    typ,
-		Literal: literal,
-	}
-}
-
-func createTokenType(str string) token.Type {
-	switch str {
-	case token.Text.String():
-		return token.Text
-	case token.Feature.String():
-		return token.Feature
-	case token.Eof.String():
-		return token.Eof
-	case token.Eos.String():
-		return token.Eos
-	}
-
-	panic(fmt.Sprintf("Cannot create token.Type from string: %v", str))
+	assert.Equal(t, expectedContent.String(), actualContent.String())
 }

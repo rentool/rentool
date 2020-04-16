@@ -13,3 +13,6 @@ feature:
       literal: "this is feature description"
     - type: Eos
       literal: ''
+  "\n":
+    - type: Eos
+      literal: ""
