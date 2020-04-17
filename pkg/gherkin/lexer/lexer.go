@@ -43,6 +43,7 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	result := l.scanEOF() ||
+		l.scanEos() ||
 		l.scanKeyword() ||
 		l.scanComment() ||
 		l.scanText()
@@ -85,6 +86,16 @@ func (l *Lexer) scanKeyword() bool {
 	l.consumeLine()
 
 	return true
+}
+
+func (l *Lexer) scanEos() bool {
+	if l.trimmedLine == "" {
+		l.consumeLine()
+
+		return true
+	}
+
+	return false
 }
 
 func (l *Lexer) scanComment() bool {
@@ -137,5 +148,5 @@ func (l *Lexer) readLine() {
 	}
 
 	l.line = line
-	l.trimmedLine = strings.Trim(line, " ")
+	l.trimmedLine = strings.Trim(strings.Trim(line, "\n"), " ")
 }

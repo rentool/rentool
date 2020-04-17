@@ -16,3 +16,4 @@ feature:
   "\n":
     - type: Eos
       literal: ""
+nfv
