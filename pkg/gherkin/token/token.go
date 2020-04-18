@@ -11,11 +11,21 @@ type Type uint8
 
 type Token struct {
 	Type    Type
-	Literal string
+	Value   string
+	Keyword string
+	Values  []string
+}
+
+func Make(typ Type, value string, keyword string) Token {
+	return Token{
+		Type:    typ,
+		Value:   value,
+		Keyword: keyword,
+	}
 }
 
 func (t Token) String() string {
-	return fmt.Sprintf("Token(%v, %v)", t.Type, t.Literal)
+	return fmt.Sprintf("Token(%v, %v)", t.Type, t.Keyword)
 }
 
 const (
@@ -34,13 +44,16 @@ const (
 	Comment
 	Text
 	Eos
+	DocString
+	TableRow
+	Tag
 )
 
 var TypeNotFound = errors.New("TokenNotFound")
 
-// stringToTokenType looks for token type for given string. For example, for string "Scenario" it
+// StringToType looks for token type for given string. For example, for string "Scenario" it
 // returns token.Scenario type. If token type not found it returns Illegal type and error.
-func StringToTokenType(str string) (Type, error) {
+func StringToType(str string) (Type, error) {
 	switch str {
 	case Illegal.String():
 		return Illegal, nil

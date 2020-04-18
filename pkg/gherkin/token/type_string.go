@@ -23,11 +23,14 @@ func _() {
 	_ = x[Comment-12]
 	_ = x[Text-13]
 	_ = x[Eos-14]
+	_ = x[DocString-15]
+	_ = x[TableRow-16]
+	_ = x[Tag-17]
 }
 
-const _Type_name = "IllegalEofFeatureBackgroundScenarioOutlineGivenWhenThenAndButExamplesCommentTextEos"
+const _Type_name = "IllegalEofFeatureBackgroundScenarioOutlineGivenWhenThenAndButExamplesCommentTextEosDocStringTableRowTag"
 
-var _Type_index = [...]uint8{0, 7, 10, 17, 27, 35, 42, 47, 51, 55, 58, 61, 69, 76, 80, 83}
+var _Type_index = [...]uint8{0, 7, 10, 17, 27, 35, 42, 47, 51, 55, 58, 61, 69, 76, 80, 83, 92, 100, 103}
 
 func (i Type) String() string {
 	if i >= Type(len(_Type_index)-1) {

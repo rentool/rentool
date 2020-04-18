@@ -1,90 +1,66 @@
 package lexer
 
 import (
-	"fmt"
 	"github.com/rentool/rentool/pkg/gherkin/matcher"
 	"github.com/rentool/rentool/pkg/gherkin/token"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
 
-// TestFixtures runs all fixture files from ./fixtures directory.
 func TestFixtures(t *testing.T) {
-	// Given
-	config := viper.New()
-	config.SetConfigFile("fixtures/complete.yaml")
-	err := config.ReadInConfig()
+	// Arrange
+	keywordsMatcher := matcher.NewRuneTrieMatcher()
+	keywordsMatcher.Put("Feature", token.Feature)
+	keywordsMatcher.Put("Background", token.Background)
+	keywordsMatcher.Put("Scenario", token.Scenario)
+	keywordsMatcher.Put("Scenario Outline", token.Outline)
+	keywordsMatcher.Put("Given", token.Given)
+	keywordsMatcher.Put("When", token.When)
+	keywordsMatcher.Put("Then", token.Then)
+	keywordsMatcher.Put("And", token.And)
+	keywordsMatcher.Put("But", token.But)
+	keywordsMatcher.Put("Examples", token.Examples)
+
+	filePath := "../fixtures/complete.feature"
+	file, err := os.Open(filePath)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to open file %v: %v", filePath, err)
 	}
 
-	var featureContent strings.Builder
-	var expectedContent strings.Builder
-	var actualContent strings.Builder
-
-	featureRawData := config.Get("feature")
-	featureData, ok := featureRawData.(map[string]interface{})
-	if !ok {
-		t.Fatalf("cannot map feature data to map[string]interface{}: %+v", featureRawData)
+	var actualTokens strings.Builder
+	expectedTokensFilePath := filePath + "-tokens.txt"
+	expectedTokensData, err := ioutil.ReadFile(expectedTokensFilePath)
+	if err != nil {
+		t.Fatalf("failed to read file %v: %v", expectedTokensFilePath, err)
 	}
+	expectedTokens := string(expectedTokensData)
 
-	for line, rawTokens := range featureData {
-		featureContent.WriteString(line)
-
-		tokensData, ok := rawTokens.([]interface{})
-		if !ok {
-			t.Fatal("cannot map tokensData to []interface{}")
-		}
-
-		for _, rawTok := range tokensData {
-			tokenData, ok := rawTok.(map[interface{}]interface{})
-			if !ok {
-				t.Fatal("cannot map token to map[string]string")
-			}
-
-			typ, ok := tokenData["type"].(string)
-			if !ok {
-				t.Fatal("cannot convert token type to string")
-			}
-
-			literal, ok := tokenData["literal"].(string)
-			if !ok {
-				t.Fatal("cannot convert token literal to string")
-			}
-
-			expectedContent.WriteString(fmt.Sprintf("%v: %v\n", typ, literal))
-		}
-	}
-
-	rawKeywords := config.Get("keywords")
-	keywords, ok := rawKeywords.(map[string]interface{})
-	if !ok {
-		t.Fatalf("cannot map keywords to map[string]interface{}: %+v", rawKeywords)
-	}
-
-	var keywordsMatcher = matcher.NewRuneTrieMatcher()
-	for keyword, typeRawStr := range keywords {
-		typeStr, ok := typeRawStr.(string)
-		if !ok {
-			t.Fatalf("cannot map token type to string: %+v", typeRawStr)
-		}
-
-		tokType, err := token.StringToTokenType(typeStr)
-		if err != nil {
-			t.Fatalf("cannot create token type from string %+v: %v", typeStr, err)
-		}
-
-		keywordsMatcher.Put(keyword, tokType)
-	}
-
-	// When
-	lexer := New(strings.NewReader(featureContent.String()), keywordsMatcher)
+	// Act
+	lexer := New(file, keywordsMatcher)
 	for t := lexer.NextToken(); t.Type != token.Eof; t = lexer.NextToken() {
-		actualContent.WriteString(fmt.Sprintf("%v: %v\n", t.Type.String(), t.Literal))
+		actualTokens.WriteString(t.Type.String() + ":")
+		if "" != t.Keyword {
+			actualTokens.WriteString(" " + t.Keyword)
+		}
+		if t.Type == token.TableRow {
+			actualTokens.WriteString(" | ")
+			for i, column := range t.Values {
+				actualTokens.WriteString(column)
+
+				if i != len(t.Values)-1 {
+					actualTokens.WriteString(" |")
+				}
+			}
+			actualTokens.WriteString(" |")
+		} else if "" != t.Value {
+			actualTokens.WriteString(" " + t.Value)
+		}
+		actualTokens.WriteString("\n")
 	}
 
-	// Then
-	assert.Equal(t, expectedContent.String(), actualContent.String())
+	// Assert
+	assert.Equal(t, expectedTokens, actualTokens.String())
 }

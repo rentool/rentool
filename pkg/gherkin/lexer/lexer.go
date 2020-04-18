@@ -19,6 +19,8 @@ type Lexer struct {
 	trimmedLine     string
 	lineNo          int
 	isEOF           bool
+	inDocString     bool
+	docStringIdent  int
 	error           error
 	tokens          []token.Token
 }
@@ -43,9 +45,11 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	result := l.scanEOF() ||
-		l.scanEos() ||
+		l.scanDocString() ||
+		l.scanDocStringContent() ||
 		l.scanKeyword() ||
 		l.scanComment() ||
+		l.scanTableRow() ||
 		l.scanText()
 
 	if !result {
@@ -59,9 +63,54 @@ func (l *Lexer) NextToken() token.Token {
 	return l.dequeueToken()
 }
 
+func (l *Lexer) scanTableRow() bool {
+	if len(l.trimmedLine) == 0 || l.trimmedLine[0] != '|' || l.trimmedLine[len(l.trimmedLine)-1] != '|' {
+		return false
+	}
+
+	row := l.trimmedLine[1 : len(l.trimmedLine)-1]
+	var columns []string
+	for _, column := range strings.Split(row, "|") {
+		columns = append(columns, strings.Trim(column, " "))
+	}
+
+	l.tokens = append(l.tokens, token.Token{
+		Type:   token.TableRow,
+		Values: columns,
+	})
+	l.readLine()
+
+	return true
+}
+
+func (l *Lexer) scanDocString() bool {
+	i := strings.Index(l.line, "\"\"\"")
+	if -1 == i {
+		return false
+	}
+
+	l.inDocString = !l.inDocString
+	l.docStringIdent = i
+	l.queueToken(token.DocString, "", "")
+	l.readLine()
+
+	return true
+}
+
+func (l *Lexer) scanDocStringContent() bool {
+	if !l.inDocString {
+		return false
+	}
+
+	l.queueToken(token.Text, "", strings.Repeat(" ", l.docStringIdent)+strings.Trim(l.line, " "))
+	l.readLine()
+
+	return true
+}
+
 func (l *Lexer) scanEOF() bool {
 	if l.isEOF {
-		l.queueToken(token.Eof, "")
+		l.queueToken(token.Eof, "", "")
 
 		return true
 	}
@@ -79,17 +128,16 @@ func (l *Lexer) scanKeyword() bool {
 	if !ok {
 		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. It must be instance of token.Type", tokenValue))
 	}
-	l.queueToken(typ, typ.String())
-
-	l.queueToken(token.Text, restLine)
+	l.queueToken(typ, typ.String(), strings.Trim(restLine, " "))
 
 	l.consumeLine()
 
 	return true
 }
 
-func (l *Lexer) scanEos() bool {
-	if l.trimmedLine == "" {
+func (l *Lexer) scanComment() bool {
+	if len(l.trimmedLine) > 0 && l.trimmedLine[0] == '#' {
+		l.queueToken(token.Comment, "", strings.Trim(l.line, " "))
 		l.consumeLine()
 
 		return true
@@ -98,12 +146,8 @@ func (l *Lexer) scanEos() bool {
 	return false
 }
 
-func (l *Lexer) scanComment() bool {
-	return false
-}
-
 func (l *Lexer) scanText() bool {
-	l.queueToken(token.Text, l.line)
+	l.queueToken(token.Text, "", strings.Trim(l.line, " "))
 
 	l.consumeLine()
 
@@ -111,8 +155,6 @@ func (l *Lexer) scanText() bool {
 }
 
 func (l *Lexer) consumeLine() {
-	l.queueToken(token.Eos, "")
-
 	l.readLine()
 }
 
@@ -123,10 +165,11 @@ func (l *Lexer) dequeueToken() token.Token {
 	return t
 }
 
-func (l *Lexer) queueToken(typ token.Type, literal string) {
+func (l *Lexer) queueToken(typ token.Type, keyword string, value string) {
 	l.tokens = append(l.tokens, token.Token{
 		Type:    typ,
-		Literal: strings.Trim(strings.Trim(literal, "\n"), " "),
+		Keyword: strings.Trim(strings.TrimRight(keyword, "\n"), " "),
+		Value:   strings.TrimRight(value, "\n"),
 	})
 }
 

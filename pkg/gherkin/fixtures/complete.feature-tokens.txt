@@ -1,0 +1,30 @@
+Comment: # Some feature comment
+Feature: Feature : feature title
+Text: The description
+Text:
+Comment: # Some background comment
+Background: Background : background title
+Text: The description.
+Text:
+Given: Given given value
+And: And and value
+When: When when value
+Then: Then then value
+But: But but value
+Text:
+Scenario: Scenario : multiline arguments.
+Text:
+Given: Given json:
+DocString:
+Text:     {
+Text:     "key": "value"
+Text:     }
+DocString:
+And: And empty json:
+DocString:
+DocString:
+And: And table:
+TableRow: | header |
+TableRow: | value |
+And: And empty table row:
+TableRow: |  |
