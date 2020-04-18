@@ -1,4 +1,4 @@
-package lexer
+package gherkin
 
 import (
 	"github.com/rentool/rentool/pkg/gherkin/matcher"
@@ -24,7 +24,7 @@ func TestFixtures(t *testing.T) {
 	keywordsMatcher.Put("But", token.But)
 	keywordsMatcher.Put("Examples", token.Examples)
 
-	filePath := "../fixtures/complete.feature"
+	filePath := "fixtures/complete.feature"
 	file, err := os.Open(filePath)
 	if err != nil {
 		t.Fatalf("failed to open file %v: %v", filePath, err)
@@ -39,7 +39,7 @@ func TestFixtures(t *testing.T) {
 	expectedTokens := string(expectedTokensData)
 
 	// Act
-	lexer := New(file, keywordsMatcher)
+	lexer := NewLexer(file, keywordsMatcher)
 	for t := lexer.NextToken(); t.Type != token.Eof; t = lexer.NextToken() {
 		actualTokens.WriteString(t.Type.String() + ":")
 		if "" != t.Keyword {

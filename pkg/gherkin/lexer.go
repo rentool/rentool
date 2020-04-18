@@ -1,4 +1,4 @@
-package lexer
+package gherkin
 
 import (
 	"bufio"
@@ -25,8 +25,8 @@ type Lexer struct {
 	tokens          []token.Token
 }
 
-// New creates new Lexer structure.
-func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
+// NewLexer creates new Lexer structure.
+func NewLexer(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 	lexer := &Lexer{
 		keywordsMatcher: keywordsMatcher,
 		reader:          bufio.NewReader(reader),
@@ -36,6 +36,14 @@ func New(reader io.Reader, keywordsMatcher matcher.ReadOnlyMatcher) *Lexer {
 	lexer.readLine()
 
 	return lexer
+}
+
+func (l *Lexer) PredictToken() token.Token {
+	if len(l.tokens) == 0 {
+		l.tokens = append(l.tokens, l.NextToken())
+	}
+
+	return l.tokens[0]
 }
 
 // NextToken reads next sequence of runes and returns matching token.
