@@ -1,4 +1,5 @@
 Comment: # Some feature comment
+Tag: @featureTag1 @featureTag2
 Feature: Feature : feature title
 Text: The description
 Text:
@@ -11,6 +12,13 @@ And: And and value
 When: When when value
 Then: Then then value
 But: But but value
+Text:
+Tag: @ScenarioTag1 @Scenario_Tag2
+Scenario: Scenario : test tags
+Text:
+Comment: # step with tags
+Tag: @stepTag
+Given: Given tags
 Text:
 Scenario: Scenario : multiline arguments.
 Text:

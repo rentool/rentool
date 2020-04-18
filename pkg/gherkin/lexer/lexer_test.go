@@ -55,6 +55,10 @@ func TestFixtures(t *testing.T) {
 				}
 			}
 			actualTokens.WriteString(" |")
+		} else if t.Type == token.Tag {
+			for _, tag := range t.Values {
+				actualTokens.WriteString(" @" + tag)
+			}
 		} else if "" != t.Value {
 			actualTokens.WriteString(" " + t.Value)
 		}

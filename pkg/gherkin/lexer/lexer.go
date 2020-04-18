@@ -48,6 +48,7 @@ func (l *Lexer) NextToken() token.Token {
 		l.scanDocString() ||
 		l.scanDocStringContent() ||
 		l.scanKeyword() ||
+		l.scanTag() ||
 		l.scanComment() ||
 		l.scanTableRow() ||
 		l.scanText()
@@ -61,6 +62,25 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	return l.dequeueToken()
+}
+
+func (l *Lexer) scanTag() bool {
+	if len(l.trimmedLine) == 0 || l.trimmedLine[0] != '@' {
+		return false
+	}
+
+	var tags []string
+	for _, tag := range strings.Split(l.trimmedLine[1:], "@") {
+		tags = append(tags, strings.Trim(tag, " "))
+	}
+
+	l.tokens = append(l.tokens, token.Token{
+		Type:   token.Tag,
+		Values: tags,
+	})
+	l.readLine()
+
+	return true
 }
 
 func (l *Lexer) scanTableRow() bool {
