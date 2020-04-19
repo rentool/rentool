@@ -60,7 +60,6 @@ func TestRuneTrieMatcher_FindFirstAtStartOfText(t *testing.T) {
 		assert.Equal(t, 9, offset)
 	})
 
-	// TODO
 	t.Run("must be nil by part of key", func(t *testing.T) {
 		val, offset := matcher.FindFirstAtStartOfText("Two")
 		assert.Nil(t, val)
@@ -79,7 +78,6 @@ func TestRuneTrieMatcher_FindFirstAtStartOfText(t *testing.T) {
 		assert.Equal(t, 0, offset)
 	})
 
-	// TODO
 	t.Run("must be case insensitive without rest of text", func(t *testing.T) {
 		val, offset := matcher.FindFirstAtStartOfText("caseInsenSEtivE sdfsdfsdf")
 		assert.Equal(t, 2, val)
