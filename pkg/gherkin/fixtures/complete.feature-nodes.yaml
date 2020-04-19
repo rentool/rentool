@@ -1,0 +1,8 @@
+feature:
+  title: feature title
+  description: The description
+  background:
+    title: background title
+    description: The description.
+    steps:
+      - text: given value
