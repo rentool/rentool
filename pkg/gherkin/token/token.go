@@ -7,8 +7,10 @@ import (
 	"fmt"
 )
 
+// Type custom type of uint8
 type Type uint8
 
+// Token
 type Token struct {
 	Type    Type
 	Value   string
@@ -16,6 +18,7 @@ type Token struct {
 	Values  []string
 }
 
+// Make initialize new Token object
 func Make(typ Type, value string, keyword string) Token {
 	return Token{
 		Type:    typ,
@@ -24,10 +27,12 @@ func Make(typ Type, value string, keyword string) Token {
 	}
 }
 
+// String string representation of Token
 func (t Token) String() string {
 	return fmt.Sprintf("Token(%v, %v)", t.Type, t.Keyword)
 }
 
+// Listing Type const
 const (
 	Illegal Type = iota
 	Eof
@@ -49,6 +54,7 @@ const (
 	Tag
 )
 
+// TypeNotFound type not found error
 var TypeNotFound = errors.New("TokenNotFound")
 
 // StringToType looks for token type for given string. For example, for string "Scenario" it
