@@ -146,7 +146,8 @@ func (l *Lexer) scanKeyword() bool {
 
 	typ, ok := tokenValue.(token.Type)
 	if !ok {
-		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. It must be instance of token.Type", tokenValue))
+		panic(fmt.Sprintf("Keywords matcher returned invalid value: %+v. "+
+			"It must be instance of token.Type", tokenValue))
 	}
 	l.queueToken(typ, typ.String(), strings.Trim(restLine, " "))
 
